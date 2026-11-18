@@ -3,6 +3,9 @@
 set -e
 export PATH="$HOME/.local/bin:$PATH"
 cd "${0:A:h}"
+# nyt versionsnummer på css/js, så browsere ikke bruger gamle filer fra cachen
+V=$(date +%Y%m%d%H%M)
+sed -i '' -E "s#(href=\"css/style\.css)(\?v=[0-9]+)?\"#\1?v=$V\"#; s#(src=\"js/[a-z]+\.js)(\?v=[0-9]+)?\"#\1?v=$V\"#g" index.html
 git add -A
 if git diff --cached --quiet; then
   echo "Ingen ændringer at lægge op."
