@@ -97,7 +97,7 @@
             <div class="sb-head"><span></span>${sets ? '<span>Sets</span>' : ''}<span>Legs</span><span></span></div>
             ${[0, 1].map((i) => `
               <div class="sb-row" data-i="${i}">
-                <div class="sb-name"><span class="sb-arrow">▶</span><span class="flag">${flag(P[i].nat)}</span><div><b>${esc(P[i].name)}</b><small>${esc(P[i].nick || (human[i] ? 'Dig' : ''))}${human[i] ? ' · 🎯 dig' : ''}</small></div></div>
+                <div class="sb-name"><span class="sb-arrow">▶</span>${G.Avatar.head(P[i], 34)}<span class="flag">${flag(P[i].nat)}</span><div><b>${esc(P[i].name)}</b><small>${esc(P[i].nick || (human[i] ? 'Dig' : ''))}${human[i] ? ' · 🎯 dig' : ''}</small></div></div>
                 ${sets ? '<div class="sb-num sb-sets">0</div>' : ''}
                 <div class="sb-num sb-legs">0</div>
                 <div class="sb-rem">501</div>
@@ -106,7 +106,13 @@
           <div class="ms-stats"></div>
           <div class="ms-log"></div>
         </div>
-        <div class="ms-center"><div class="board-wrap"><canvas class="board-bg"></canvas><canvas class="board-fg"></canvas><div class="callout"></div></div></div>
+        <div class="ms-center">
+          <div class="tv-bar ${sets ? "" : "nosets"}">
+            <div class="tv-row tv-head"><span></span><span></span>${sets ? '<span>Sets</span>' : ''}<span>Legs</span><span>Rest</span></div>
+            ${[0, 1].map((i) => `<div class="tv-row" data-i="${i}"><span class="tv-arrow">▶</span><span class="tv-name">${G.Avatar.head(P[i], 26)} ${flag(P[i].nat)} ${esc(P[i].name.split(' ').slice(-1)[0])}</span>${sets ? '<span class="tv-sets" title="Sets">0</span>' : ''}<span class="tv-legs" title="Legs">0</span><span class="tv-rem">501</span></div>`).join('')}
+            <div class="tv-visit"><span class="tv-darts"></span><span class="tv-hint"></span></div>
+          </div>
+          <div class="board-wrap"><canvas class="board-bg"></canvas><canvas class="board-fg"></canvas><div class="oche-fig"></div><div class="callout"></div></div></div>
         <div class="ms-right">
           <div class="panel visit-panel">
             <div class="vp-who"></div>
@@ -133,9 +139,16 @@
     let size = 600, dpr = window.devicePixelRatio || 1, sc = 1;
     function resize() {
       const c = root.querySelector('.ms-center');
-      const s = Math.floor(Math.max(260, Math.min(c.clientWidth - 8, c.clientHeight - 8)));
+      const bar = root.querySelector('.tv-bar');
+      const barH = bar && bar.offsetParent ? bar.offsetHeight + 8 : 0;
+      const phone = window.innerWidth <= 760;
+      const availH = phone ? window.innerHeight * 0.58 : c.clientHeight - barH;
+      const side = phone ? 1 : 1.42; // på større skærme står spilleren ved siden af skiven
+      const s = Math.floor(Math.max(240, Math.min((c.clientWidth - 8) / side, availH - 8)));
       size = s; sc = size / 2 / VIEW_R;
       wrap.style.width = wrap.style.height = s + 'px';
+      wrap.style.marginLeft = phone ? '0' : Math.round(s * 0.42) + 'px';
+      root.classList.toggle('phone', phone);
       [bg, fg].forEach((cv) => { cv.width = s * dpr; cv.height = s * dpr; cv.style.width = cv.style.height = s + 'px'; });
       const bctx = bg.getContext('2d');
       bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -185,8 +198,8 @@
 
     // ---------- tegning ----------
     const fctx = fg.getContext('2d');
-    function drawDart(x, y, who, fresh) {
-      const p = toPx(x, y);
+    function drawDart(x, y, who, fresh, px) {
+      const p = px || toPx(x, y);
       fctx.save();
       fctx.translate(p.x, p.y);
       fctx.strokeStyle = 'rgba(0,0,0,.6)'; fctx.lineWidth = 3;
@@ -203,6 +216,14 @@
       fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       fctx.clearRect(0, 0, size, size);
       boardDarts.forEach((d, i) => drawDart(d.x, d.y, d.who, i === boardDarts.length - 1));
+      if (flying) {
+        const k = Math.min(1, (performance.now() - flying.t0) / flying.dur);
+        const to = toPx(flying.to.x, flying.to.y);
+        const px = { x: flying.from.x + (to.x - flying.from.x) * k, y: flying.from.y + (to.y - flying.from.y) * k - Math.sin(Math.PI * k) * size * 0.06 };
+        fctx.globalAlpha = 0.35 + 0.65 * k;
+        drawDart(0, 0, flying.who, false, px);
+        fctx.globalAlpha = 1;
+      }
       if (aiTarget) {
         const p = toPx(aiTarget.x, aiTarget.y);
         fctx.strokeStyle = 'rgba(250,204,21,.9)'; fctx.lineWidth = 2;
@@ -244,6 +265,20 @@
         row.querySelector('.sb-legs').textContent = m.legs[i];
         if (sets) row.querySelector('.sb-sets').textContent = m.sets[i];
       });
+      root.querySelectorAll('.tv-row[data-i]').forEach((row) => {
+        const i = +row.dataset.i;
+        row.classList.toggle('active', m.turn === i && !m.over);
+        row.querySelector('.tv-rem').textContent = m.rem[i];
+        row.querySelector('.tv-legs').textContent = m.legs[i];
+        if (sets) row.querySelector('.tv-sets').textContent = m.sets[i];
+      });
+      const fig = root.querySelector('.oche-fig');
+      if (fig) fig.classList.toggle('mine', !!human[m.turn] && !m.over);
+      if (fig && fig.dataset.who !== String(m.turn)) {
+        fig.dataset.who = m.turn;
+        fig.innerHTML = G.Avatar.thrower(P[m.turn]) + `<div class="oche-name">${esc(P[m.turn].name.split(' ').slice(-1)[0])}</div>`;
+        fig.classList.remove('enter'); void fig.offsetWidth; fig.classList.add('enter');
+      }
       const st = root.querySelector('.ms-stats');
       const rows = [
         ['3-dart snit', (s) => E.avg(s).toFixed(2)],
@@ -269,6 +304,11 @@
         else if (m.rem[i] <= 170) hint = m.rem[i] > 1 ? 'Ingen checkout med ' + m.dartsLeft + ' pil(e) – stil op' : '';
       }
       vp.querySelector('.vp-hint').innerHTML = hint;
+      const tvd = root.querySelector('.tv-darts');
+      if (tvd) {
+        tvd.innerHTML = [0, 1, 2].map((k) => { const d = m.visit.darts[k]; return `<b class="${d ? 'on' : ''}">${d ? d.hit.label : '·'}</b>`; }).join('') + (m.visit.score ? `<em>${m.visit.score}</em>` : '');
+        root.querySelector('.tv-hint').innerHTML = m.over ? '' : (human[i] ? '🎯 ' : '') + (hint || esc(P[i].name.split(' ').slice(-1)[0]) + ' kaster');
+      }
       root.querySelectorAll('[data-act="auto"]').forEach((b) => (b.disabled = !human[m.turn] || m.over || busy));
     }
 
@@ -281,12 +321,30 @@
     function addLog(who, html) { log.unshift({ who, html }); }
 
     // ---------- kast ----------
+    // hånden på figuren i lærredets koordinater
+    function handPos() {
+      const fig = root.querySelector('.oche-fig');
+      if (!fig) return { x: 0, y: size * 0.45 };
+      const fr = fig.getBoundingClientRect(), cr = fg.getBoundingClientRect();
+      return { x: Math.max(0, fr.left + fr.width * 0.92 - cr.left), y: Math.min(size, Math.max(0, fr.top + fr.height * 0.2 - cr.top)) };
+    }
+    let flying = null;
     function registerThrow(x, y, viaAI) {
-      const hit = E.hitAt(x, y);
       const who = m.turn;
-      boardDarts.push({ x, y, who });
-      const ev = m.throwDart(hit, { x, y });
-      handleEvent(ev, who);
+      const fig = root.querySelector('.oche-fig');
+      if (fig) { fig.classList.remove('throw'); void fig.offsetWidth; fig.classList.add('throw'); }
+      busy = true;
+      later(() => {
+        flying = { from: handPos(), to: { x, y }, t0: performance.now(), dur: 190 / (settings.speed || 1), who };
+        later(() => {
+          flying = null;
+          busy = false;
+          const hit = E.hitAt(x, y);
+          boardDarts.push({ x, y, who });
+          const ev = m.throwDart(hit, { x, y });
+          handleEvent(ev, who);
+        }, 190);
+      }, 110);
     }
 
     function handleEvent(ev, who) {
@@ -350,10 +408,11 @@
       if (!humanTurn()) return;
       const who = m.turn;
       const step = () => {
-        if (m.over || m.turn !== who || busy) return;
+        if (m.over || m.turn !== who) return;
+        if (busy) { later(step, 120); return; }
         const th = m.aiThrow();
         registerThrow(th.x, th.y, true);
-        if (!busy && m.turn === who) later(step, 380);
+        later(step, 420);
       };
       step();
     }
@@ -419,7 +478,7 @@
       const row = (l, f) => `<tr><td>${f(res.st[0])}</td><th>${l}</th><td>${f(res.st[1])}</td></tr>`;
       ov.innerHTML = `<div class="card">
         <div class="res-kicker">${esc(cfg.title || '')}</div>
-        <h2>${flag(W.nat)} ${esc(W.name)} vinder</h2>
+        <div class="res-av">${G.Avatar.head(W, 96)}</div><h2>${flag(W.nat)} ${esc(W.name)} vinder</h2>
         <div class="res-score"><span>${esc(P[0].name)}</span><b>${sets ? m.sets[0] : m.legs[0]} – ${sets ? m.sets[1] : m.legs[1]}</b><span>${esc(P[1].name)}</span></div>
         <table class="res-table">
           ${row('3-dart snit', (s) => s.avg.toFixed(2))}

@@ -73,7 +73,7 @@
     const rk = w.rankOf(id);
     const seasons = Object.keys(p.earn).sort().reverse();
     modal(`
-      <div class="pm-head">${ovrBadge(p)}<div><h2>${flag(p.nat)} ${esc(p.name)}</h2><div class="muted">${p.nick ? '“' + esc(p.nick) + '” · ' : ''}${natName(p.nat)} · ${age} år ${stars(p.pot)}</div></div></div>
+      <div class="pm-head">${G.Avatar.head(p, 72)}${ovrBadge(p)}<div><h2>${flag(p.nat)} ${esc(p.name)}</h2><div class="muted">${p.nick ? '“' + esc(p.nick) + '” · ' : ''}${natName(p.nat)} · ${age} år ${stars(p.pot)}</div></div></div>
       <div class="pm-grid">
         <div>${ATTRS.map((k) => attrBar(k, p.attr[k])).join('')}
           <div class="muted small" style="margin-top:8px">Forventet 3-dart snit: <b>${expAvg(p).toFixed(1)}</b></div></div>
@@ -184,7 +184,7 @@
     bindGo(app);
     const card = (i) => {
       const p = w.s.players[app.querySelector('#q-p' + i).value];
-      app.querySelector('#q-c' + i).innerHTML = `${ovrBadge(p)} <span class="muted">${flag(p.nat)} ${natName(p.nat)} · forventet snit ${expAvg(p).toFixed(1)}</span>${ATTRS.map((k) => attrBar(k, p.attr[k])).join('')}`;
+      app.querySelector('#q-c' + i).innerHTML = `<div class="pick-head">${G.Avatar.head(p, 64)}${ovrBadge(p)}</div> <span class="muted">${flag(p.nat)} ${natName(p.nat)} · forventet snit ${expAvg(p).toFixed(1)}</span>${ATTRS.map((k) => attrBar(k, p.attr[k])).join('')}`;
     };
     [0, 1].forEach((i) => {
       app.querySelector('#q-p' + i).addEventListener('change', () => card(i));
@@ -225,7 +225,7 @@
       let list = w.active().filter((p) => (f === 'real' ? p.real || p.own : f === 'tour' ? w.hasCard(p) : true) && (!q || p.name.toLowerCase().includes(q) || (p.nick || '').toLowerCase().includes(q)));
       const key = { ovr: (p) => -ovr(p), rank: (p) => w.rankOf(p.id) || 9999, age: (p) => w.s.season - p.born, pot: (p) => -p.pot };
       list.sort((a, b) => (key[s] ? key[s](a) - key[s](b) : b.attr[s] - a.attr[s]));
-      el.querySelector('.db-list').innerHTML = `<table class="tbl hover"><tr><th>Spiller</th><th>Alder</th><th>Rang</th><th>Samlet</th>${ATTRS.map((k) => `<th class="hide-sm">${ATTR_DA[k].slice(0, 5)}</th>`).join('')}<th class="hide-sm">Pot.</th></tr>${list.slice(0, 250).map((p) => `<tr><td>${pName(p, w)}${p.nick ? `<small class="muted"> ${esc(p.nick)}</small>` : ''}</td><td>${w.s.season - p.born}</td><td>${w.rankOf(p.id) || '–'}</td><td>${ovrBadge(p)}</td>${ATTRS.map((k) => `<td class="hide-sm">${Math.floor(p.attr[k])}</td>`).join('')}<td class="hide-sm">${stars(p.pot)}</td></tr>`).join('')}</table>`;
+      el.querySelector('.db-list').innerHTML = `<table class="tbl hover"><tr><th>Spiller</th><th>Alder</th><th>Rang</th><th>Samlet</th>${ATTRS.map((k) => `<th class="hide-sm">${ATTR_DA[k].slice(0, 5)}</th>`).join('')}<th class="hide-sm">Pot.</th></tr>${list.slice(0, 250).map((p) => `<tr><td><span class="db-av">${G.Avatar.head(p, 26)}</span>${pName(p, w)}${p.nick ? `<small class="muted"> ${esc(p.nick)}</small>` : ''}</td><td>${w.s.season - p.born}</td><td>${w.rankOf(p.id) || '–'}</td><td>${ovrBadge(p)}</td>${ATTRS.map((k) => `<td class="hide-sm">${Math.floor(p.attr[k])}</td>`).join('')}<td class="hide-sm">${stars(p.pot)}</td></tr>`).join('')}</table>`;
     };
     el.querySelectorAll('.db-q,.db-f,.db-s').forEach((x) => x.addEventListener('input', render));
     render();
@@ -287,7 +287,7 @@
           body += `<div class="own-matches">${pending.map(({ m, i }) => {
             const A = w.s.players[m.a], B = w.s.players[m.b];
             return `<div class="own-match card">
-              <div class="om-vs"><div>${ovrBadge(A)} ${pName(A, w)}<small class="muted">#${w.rankOf(A.id) || '–'} · snit ~${expAvg(A).toFixed(0)}</small></div><span class="vs">VS</span><div>${ovrBadge(B)} ${pName(B, w)}<small class="muted">#${w.rankOf(B.id) || '–'} · snit ~${expAvg(B).toFixed(0)}</small></div></div>
+              <div class="om-vs"><div><span class="om-av">${G.Avatar.head(A, 56)}${ovrBadge(A)}</span>${pName(A, w)}<small class="muted">#${w.rankOf(A.id) || '–'} · snit ~${expAvg(A).toFixed(0)}</small></div><span class="vs">VS</span><div><span class="om-av">${G.Avatar.head(B, 56)}${ovrBadge(B)}</span>${pName(B, w)}<small class="muted">#${w.rankOf(B.id) || '–'} · snit ~${expAvg(B).toFixed(0)}</small></div></div>
               <div class="om-btns"><button class="btn primary" data-play="${i}">🎯 Spil selv</button><button class="btn" data-sim="${i}">⚡ Simulér</button></div></div>`;
           }).join('')}</div>`;
         }
@@ -349,7 +349,7 @@
       }).join('');
       if (ev.special === 'plnight') return `${plTableHtml(w)}<h3>Aftenens resultater</h3>${matchList(ev.matches[0], w)}<button class="btn primary lg" data-a="exit">Fortsæt ▶</button>`;
       const fin = ev.matches[ev.R - 1][0];
-      return `<div class="champion card"><div class="trophy">🏆</div><div class="kicker">Vinder</div><h2>${flag(win.nat)} ${esc(win.name)}</h2><p class="muted">Finale: ${pName(w.s.players[fin.a], w)} ${fin.score} ${pName(w.s.players[fin.b], w)}</p>${own ? `<h3>Din stald</h3>${own}` : ''}<button class="btn primary lg" data-a="exit">Fortsæt ▶</button></div>`;
+      return `<div class="champion card"><div class="champ-av">${G.Avatar.head(win, 110)}<div class="trophy">🏆</div></div><div class="kicker">Vinder</div><h2>${flag(win.nat)} ${esc(win.name)}</h2><p class="muted">Finale: ${pName(w.s.players[fin.a], w)} ${fin.score} ${pName(w.s.players[fin.b], w)}</p>${own ? `<h3>Din stald</h3>${own}` : ''}<button class="btn primary lg" data-a="exit">Fortsæt ▶</button></div>`;
     }
 
     render();
@@ -543,7 +543,7 @@
       return `<div class="stable-cards">${w.stable.map((p) => {
         const age = s.season - p.born;
         return `<div class="card pcard" data-id="${p.id}">
-          <div class="pm-head">${ovrBadge(p)}<div><h2>${pName(p, w)}</h2><div class="muted">${p.nick ? '“' + esc(p.nick) + '” · ' : ''}${age} år · ${stars(p.pot)}</div></div></div>
+          <div class="pm-head">${G.Avatar.head(p, 64)}${ovrBadge(p)}<div><h2>${pName(p, w)}</h2><div class="muted">${p.nick ? '“' + esc(p.nick) + '” · ' : ''}${age} år · ${stars(p.pot)}</div></div></div>
           <div class="kv small">
             <div><span>Rangliste</span><b>#${w.rankOf(p.id) || '–'}</b></div>
             <div><span>Tourkort</span><b>${w.hasCard(p) ? 'til ' + p.tourCard : '❌ nej'}</b></div>
@@ -605,7 +605,7 @@
   }
 
   function stableCardMini(w, p) {
-    return `<div class="mini card">${ovrBadge(p)}<div><b>${pName(p, w)}</b><small class="muted">#${w.rankOf(p.id) || '–'} · ${w.hasCard(p) ? 'tourkort' : 'uden tourkort'} · form ${p.form >= 0 ? '+' : ''}${p.form.toFixed(1)} · træthed ${Math.round(p.fatigue)}%</small></div></div>`;
+    return `<div class="mini card">${G.Avatar.head(p, 40)}${ovrBadge(p)}<div><b>${pName(p, w)}</b><small class="muted">#${w.rankOf(p.id) || '–'} · ${w.hasCard(p) ? 'tourkort' : 'uden tourkort'} · form ${p.form >= 0 ? '+' : ''}${p.form.toFixed(1)} · træthed ${Math.round(p.fatigue)}%</small></div></div>`;
   }
 
   function bindTab(w, tab) {
