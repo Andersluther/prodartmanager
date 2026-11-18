@@ -142,9 +142,14 @@
           <a class="mode" href="#" data-go="quick"><div class="mode-ico">🎯</div><h3>Hurtig kamp</h3><p>Én kamp mod computeren eller en ven ved samme skærm. Vælg format, legs/sets, 501/301 og double-in.</p></a>
           <a class="mode" href="#" data-go="db"><div class="mode-ico">📋</div><h3>Spillerdatabase</h3><p>${D.REAL.length} rigtige PDC-spillere med vurderinger af scoring, doubler, stabilitet, nerver og udholdenhed.</p></a>
         </section>
-        <p class="disclaimer">Spillervurderinger, præmiepenge og kalender er skøn baseret på PDC-touren og er ikke officielle data. Ikke tilknyttet PDC.</p>
+        <p class="disclaimer"><a href="#" id="credits">Fotos og licenser</a> · Spillervurderinger, præmiepenge og kalender er skøn baseret på PDC-touren og er ikke officielle data. Ikke tilknyttet PDC.</p>
       </main>`;
     bindGo(app);
+    app.querySelector('#credits').addEventListener('click', (e) => {
+      e.preventDefault();
+      const ph = G.PLAYER_PHOTOS || {};
+      modal(`<h2>Fotos og licenser</h2><p class="muted">Spillerfotos er frit licenserede billeder fra Wikimedia Commons og bruges under de angivne licenser. Klik for at se originalen, fotografen og licensen.</p><table class="tbl">${Object.entries(ph).sort().map(([n, x]) => `<tr><td>${G.Avatar.head({ name: n }, 30)} ${esc(n)}</td><td class="small">${esc(x.author || 'ukendt')}</td><td class="small"><a href="${esc(x.page)}" target="_blank" rel="noopener">${esc(x.license)}</a></td></tr>`).join('')}</table>`);
+    });
     const cv = app.querySelector('.hero-board');
     G.MatchScreen.drawBoard(cv.getContext('2d'), 460);
   }
@@ -553,6 +558,7 @@
             <div><span>Forv. snit</span><b>${expAvg(p).toFixed(1)}</b></div>
           </div>
           ${ATTRS.map((k) => attrBar(k, p.attr[k])).join('')}
+          <div class="photo-row"><label class="btn sm">📷 ${p.photo ? 'Skift foto' : 'Tilføj foto'}<input type="file" accept="image/*" data-photo="${p.id}" hidden></label>${p.photo ? `<button class="btn ghost sm" data-nophoto="${p.id}">Fjern foto</button>` : ''}<span class="muted small">${G.Avatar.photoOf(p) ? (p.photo ? 'Eget foto' : 'Foto fra Wikimedia Commons') : 'Intet foto – vis en silhuet'}</span></div>
           <div class="row2 plan">
             <div><label>Ugeplan (uden turnering)</label><select data-plan="${p.id}">
               <option value="train" ${p.plan === 'train' ? 'selected' : ''}>Træning – normal</option>
@@ -613,6 +619,27 @@
     if (tab === 'stable') {
       app.querySelectorAll('[data-plan]').forEach((el) => el.addEventListener('change', () => { s.players[el.dataset.plan].plan = el.value; save(); }));
       app.querySelectorAll('[data-focus]').forEach((el) => el.addEventListener('change', () => { s.players[el.dataset.focus].focus = el.value; save(); }));
+      app.querySelectorAll('[data-nophoto]').forEach((b) => b.addEventListener('click', () => { delete s.players[b.dataset.nophoto].photo; save(); hub('stable'); }));
+      app.querySelectorAll('[data-photo]').forEach((el) => el.addEventListener('change', () => {
+        const f = el.files[0];
+        if (!f) return;
+        const img = new Image();
+        img.onload = () => {
+          // beskær til 3:4 portræt, 360x480
+          const W = 360, H = 480, cv = document.createElement('canvas');
+          cv.width = W; cv.height = H;
+          const r = Math.max(W / img.width, H / img.height);
+          const w = img.width * r, h = img.height * r;
+          cv.getContext('2d').drawImage(img, (W - w) / 2, Math.min(0, (H - h) * 0.25), w, h);
+          s.players[el.dataset.photo].photo = cv.toDataURL('image/jpeg', 0.82);
+          URL.revokeObjectURL(img.src);
+          save();
+          hub('stable');
+          toast('Foto gemt', 'good');
+        };
+        img.onerror = () => toast('Kunne ikke læse billedet', 'bad');
+        img.src = URL.createObjectURL(f);
+      }));
     }
     if (tab === 'rank') {
       const draw = (k) => {

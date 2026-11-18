@@ -276,7 +276,7 @@
       if (fig) fig.classList.toggle('mine', !!human[m.turn] && !m.over);
       if (fig && fig.dataset.who !== String(m.turn)) {
         fig.dataset.who = m.turn;
-        fig.innerHTML = G.Avatar.thrower(P[m.turn]) + `<div class="oche-name">${esc(P[m.turn].name.split(' ').slice(-1)[0])}</div>`;
+        fig.innerHTML = G.Avatar.thrower(P[m.turn]) + `<div class="oche-name">${flag(P[m.turn].nat)} ${esc(P[m.turn].name)}</div>`;
         fig.classList.remove('enter'); void fig.offsetWidth; fig.classList.add('enter');
       }
       const st = root.querySelector('.ms-stats');
@@ -326,7 +326,7 @@
       const fig = root.querySelector('.oche-fig');
       if (!fig) return { x: 0, y: size * 0.45 };
       const fr = fig.getBoundingClientRect(), cr = fg.getBoundingClientRect();
-      return { x: Math.max(0, fr.left + fr.width * 0.92 - cr.left), y: Math.min(size, Math.max(0, fr.top + fr.height * 0.2 - cr.top)) };
+      return { x: Math.max(0, fr.right - cr.left), y: Math.min(size, Math.max(0, fr.top + fr.height * 0.3 - cr.top)) };
     }
     let flying = null;
     function registerThrow(x, y, viaAI) {
