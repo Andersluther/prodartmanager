@@ -196,17 +196,34 @@
     const toMM = (px, py) => ({ x: (px - size / 2) / (sc * cam.z) + cam.x, y: -(py - size / 2) / (sc * cam.z) + cam.y });
 
     // spillerkamera: billedskift, nærbillede, kast-ryk
-    function pcamShow(i, shot) {
+    // billeder: 'aim' (sigter), 'throw' (slipper pilen), 'portrait' (reaktion)
+    let throwN = 0;
+    function frameFor(i, kind) {
+      const act = P[i].photo ? [] : ((G.PLAYER_ACTION || {})[P[i].name] || []);
+      const por = G.Avatar.photoOf(P[i]);
+      if (kind === 'throw' && act.length > 1) return act[1 + (throwN % (act.length - 1))];
+      if (kind === 'portrait') return por || act[0] || null;
+      return act[0] || por || null;
+    }
+    function pcamShow(i, shot, kind) {
       const img = pcam.querySelector('.pcam-img');
-      if (pcam.dataset.who !== String(i)) {
+      const ph = frameFor(i, kind || 'aim');
+      const actList = P[i].photo ? [] : ((G.PLAYER_ACTION || {})[P[i].name] || []);
+      pcam.classList.toggle('action', !!ph && actList.includes(ph));
+      const key = i + '|' + (ph ? ph.url.slice(-60) : 'sil');
+      if (pcam.dataset.key !== key) {
+        const newPlayer = pcam.dataset.who !== String(i);
         pcam.dataset.who = i;
-        const ph = G.Avatar.photoOf(P[i]);
-        img.innerHTML = ph ? `<img src="${esc(ph.url)}" alt="" referrerpolicy="no-referrer" style="object-position:${ph.pos || '50% 22%'}" onerror="this.outerHTML=window.Avatar.silhouette()">` : G.Avatar.silhouette();
-        img.style.transformOrigin = ph && ph.pos ? ph.pos : '50% 26%';
+        pcam.dataset.key = key;
+        img.innerHTML = ph ? `<img src="${esc(ph.url)}" alt="" referrerpolicy="no-referrer" style="object-position:${ph.pos || '50% 30%'}" onerror="this.outerHTML=window.Avatar.silhouette()">` : G.Avatar.silhouette();
+        img.style.transformOrigin = ph && ph.pos ? ph.pos : '50% 30%';
         pcam.querySelector('.ps-name').innerHTML = `${flag(P[i].nat)} ${esc(P[i].name)}`;
-        const cr = G.Avatar.credit(P[i]);
-        pcam.title = cr;
-        pcam.classList.remove('cut'); void pcam.offsetWidth; pcam.classList.add('cut');
+        pcam.title = ph && !ph.own && ph.license ? `Foto: ${ph.author || 'ukendt'} · ${ph.license} · Wikimedia Commons` : '';
+        // hårdt klip uden overgang, som i TV; lille glimt ved spillerskift
+        img.style.transition = 'none';
+        if (newPlayer) { pcam.classList.remove('cut'); void pcam.offsetWidth; pcam.classList.add('cut'); }
+        void img.offsetWidth;
+        img.style.transition = '';
       }
       pcam.classList.remove('shot-wide', 'shot-face', 'shot-close');
       pcam.classList.add('shot-' + (shot || 'wide'));
@@ -385,6 +402,8 @@
     let flying = null;
     function registerThrow(x, y, viaAI) {
       const who = m.turn;
+      throwN++;
+      pcamShow(who, 'wide', 'throw');
       pcamJolt('jolt');
       busy = true;
       later(() => {
@@ -402,7 +421,11 @@
 
     function handleEvent(ev, who) {
       updateBoard();
-      if (ev.type === 'dart') { schedule(); return; }
+      if (ev.type === 'dart') {
+        later(() => { if (!busy && m.turn === who && !m.over) pcamShow(who, 'face', 'aim'); }, 350);
+        schedule();
+        return;
+      }
       busy = true;
       const visitDarts = ev.darts || [];
       // "replay": kameraet zoomer ind på pilene, spillerkameraet går i nærbillede
@@ -412,7 +435,7 @@
         const spread = Math.max(18, ...pts.map((d) => Math.hypot(d.x - cx, d.y - cy)));
         camTo(cx, cy, Math.max(1.3, Math.min(3, 95 / spread)));
       }
-      pcamShow(who, ev.type === 'leg' || (ev.type === 'visit' && ev.score >= 140) ? 'close' : 'wide');
+      pcamShow(who, ev.type === 'leg' || (ev.type === 'visit' && ev.score >= 140) ? 'close' : 'wide', 'portrait');
       if (ev.type === 'leg' || (ev.type === 'visit' && ev.score === 180)) pcamJolt('celebrate');
       const labels = (visitDarts.length ? visitDarts : []).map((d) => d.hit.label).join(' ');
       if (ev.type === 'visit') {
@@ -438,8 +461,8 @@
         aiTarget = null;
         camFull();
         if (m.over) return finish();
-        pcamShow(m.turn, 'wide');
-        later(() => { if (!m.over) pcamShow(m.turn, 'face'); }, 450);
+        pcamShow(m.turn, 'wide', 'aim');
+        later(() => { if (!m.over) pcamShow(m.turn, 'face', 'aim'); }, 450);
         updateBoard();
         schedule();
       }, pause);
@@ -453,7 +476,7 @@
         const tp = E.targetPoint(th.target);
         aiTarget = tp;
         camTo(tp.x, tp.y, th.target.n === 25 ? 2.6 : 2.3);
-        pcamShow(m.turn, 'face');
+        pcamShow(m.turn, 'face', 'aim');
         later(() => {
           aiTarget = null;
           busy = false;
@@ -578,8 +601,8 @@
 
     requestAnimationFrame(() => {
       resize();
-      pcamShow(m.turn, 'wide');
-      later(() => pcamShow(m.turn, 'face'), 700);
+      pcamShow(m.turn, 'wide', 'aim');
+      later(() => pcamShow(m.turn, 'face', 'aim'), 700);
       updateBoard();
       const st = m.turn;
       addLog(st, `${esc(P[st].name)} starter. ${cfg.doubleIn ? 'Double-in!' : 'Game on!'}`);

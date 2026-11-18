@@ -147,8 +147,9 @@
     bindGo(app);
     app.querySelector('#credits').addEventListener('click', (e) => {
       e.preventDefault();
-      const ph = G.PLAYER_PHOTOS || {};
-      modal(`<h2>Fotos og licenser</h2><p class="muted">Spillerfotos er frit licenserede billeder fra Wikimedia Commons og bruges under de angivne licenser. Klik for at se originalen, fotografen og licensen.</p><table class="tbl">${Object.entries(ph).sort().map(([n, x]) => `<tr><td>${G.Avatar.head({ name: n }, 30)} ${esc(n)}</td><td class="small">${esc(x.author || 'ukendt')}</td><td class="small"><a href="${esc(x.page)}" target="_blank" rel="noopener">${esc(x.license)}</a></td></tr>`).join('')}</table>`);
+      const ph = Object.assign({}, G.PLAYER_PHOTOS || {});
+      Object.entries(G.PLAYER_ACTION || {}).forEach(([n, arr]) => arr.forEach((x, k) => (ph[n + ' (kampfoto ' + (k + 1) + ')'] = x)));
+      modal(`<h2>Fotos og licenser</h2><p class="muted">Spillerfotos er frit licenserede billeder fra Wikimedia Commons og bruges under de angivne licenser. Klik for at se originalen, fotografen og licensen.</p><table class="tbl">${Object.entries(ph).sort().map(([n, x]) => `<tr><td>${G.Avatar.head({ name: n.replace(/ \(kampfoto.*$/, '') }, 30)} ${esc(n)}</td><td class="small">${esc(x.author || 'ukendt')}</td><td class="small"><a href="${esc(x.page)}" target="_blank" rel="noopener">${esc(x.license)}</a></td></tr>`).join('')}</table>`);
     });
     const cv = app.querySelector('.hero-board');
     G.MatchScreen.drawBoard(cv.getContext('2d'), 460);
