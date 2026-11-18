@@ -106,13 +106,17 @@
           <div class="ms-stats"></div>
           <div class="ms-log"></div>
         </div>
-        <div class="ms-center">
+        <div class="ms-center"><div class="stage">
+          <div class="pcam"><div class="pcam-in"><div class="pcam-img"></div></div><div class="pcam-vig"></div><div class="pcam-live"><i></i>LIVE</div><div class="pcam-ev">${esc(cfg.title || '')}</div><div class="pcam-strap"><b class="ps-name"></b><span class="ps-sub"></span></div><div class="pcam-flash"></div></div>
+          <div class="bcam">
+          <div class="board-wrap"><canvas class="board-bg"></canvas><canvas class="board-fg"></canvas><div class="callout"></div></div>
+          </div>
           <div class="tv-bar ${sets ? "" : "nosets"}">
             <div class="tv-row tv-head"><span></span><span></span>${sets ? '<span>Sets</span>' : ''}<span>Legs</span><span>Rest</span></div>
             ${[0, 1].map((i) => `<div class="tv-row" data-i="${i}"><span class="tv-arrow">▶</span><span class="tv-name">${G.Avatar.head(P[i], 26)} ${flag(P[i].nat)} ${esc(P[i].name.split(' ').slice(-1)[0])}</span>${sets ? '<span class="tv-sets" title="Sets">0</span>' : ''}<span class="tv-legs" title="Legs">0</span><span class="tv-rem">501</span></div>`).join('')}
             <div class="tv-visit"><span class="tv-darts"></span><span class="tv-hint"></span></div>
           </div>
-          <div class="board-wrap"><canvas class="board-bg"></canvas><canvas class="board-fg"></canvas><div class="oche-fig"></div><div class="callout"></div></div></div>
+          </div></div>
         <div class="ms-right">
           <div class="panel visit-panel">
             <div class="vp-who"></div>
@@ -137,25 +141,79 @@
     const wrap = root.querySelector('.board-wrap');
     const callout = root.querySelector('.callout');
     let size = 600, dpr = window.devicePixelRatio || 1, sc = 1;
+    // ---------- kameraer ----------
+    const pcam = root.querySelector('.pcam');
+    let boardImg = null, S0 = 0;
+    const cam = { x: 0, y: 0, z: 1 }, camT = { x: 0, y: 0, z: 1 };
+    let lastCam = '';
     function resize() {
       const c = root.querySelector('.ms-center');
       const bar = root.querySelector('.tv-bar');
-      const barH = bar && bar.offsetParent ? bar.offsetHeight + 8 : 0;
+      const barH = bar ? bar.offsetHeight + 8 : 0;
       const phone = window.innerWidth <= 760;
-      const availH = phone ? window.innerHeight * 0.58 : c.clientHeight - barH;
-      const side = phone ? 1 : 1.42; // på større skærme står spilleren ved siden af skiven
-      const s = Math.floor(Math.max(240, Math.min((c.clientWidth - 8) / side, availH - 8)));
+      root.classList.toggle('phone', phone);
+      let s;
+      if (phone) {
+        s = Math.floor(Math.max(240, Math.min(c.clientWidth - 4, window.innerHeight * 0.52)));
+        pcam.style.width = '100%';
+        pcam.style.height = Math.round(Math.min(window.innerHeight * 0.24, s * 0.62)) + 'px';
+      } else {
+        s = Math.floor(Math.max(260, Math.min((c.clientWidth - 12) / 1.66, c.clientHeight - barH - 12)));
+        pcam.style.width = Math.round(s * 0.66) + 'px';
+        pcam.style.height = s + 'px';
+      }
       size = s; sc = size / 2 / VIEW_R;
       wrap.style.width = wrap.style.height = s + 'px';
-      wrap.style.marginLeft = phone ? '0' : Math.round(s * 0.42) + 'px';
-      root.classList.toggle('phone', phone);
       [bg, fg].forEach((cv) => { cv.width = s * dpr; cv.height = s * dpr; cv.style.width = cv.style.height = s + 'px'; });
-      const bctx = bg.getContext('2d');
-      bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawBoard(bctx, s);
+      // skiven tegnes én gang i høj opløsning; kameraet beskærer og zoomer i den
+      S0 = Math.min(2600, Math.round(s * dpr * 3));
+      boardImg = document.createElement('canvas');
+      boardImg.width = boardImg.height = S0;
+      drawBoard(boardImg.getContext('2d'), S0);
+      lastCam = '';
     }
-    const toPx = (x, y) => ({ x: size / 2 + x * sc, y: size / 2 - y * sc });
-    const toMM = (px, py) => ({ x: (px - size / 2) / sc, y: -(py - size / 2) / sc });
+    function clampCam(c) {
+      const w = VIEW_R / c.z;
+      const lim = Math.max(0, VIEW_R - w);
+      c.x = Math.max(-lim, Math.min(lim, c.x));
+      c.y = Math.max(-lim, Math.min(lim, c.y));
+      return c;
+    }
+    function camTo(x, y, z) { camT.x = x; camT.y = y; camT.z = z; clampCam(camT); }
+    function camFull() { camTo(0, 0, 1); }
+    function drawBg() {
+      const key = cam.x.toFixed(2) + ',' + cam.y.toFixed(2) + ',' + cam.z.toFixed(3) + ',' + size;
+      if (key === lastCam || !boardImg) return;
+      lastCam = key;
+      const b = bg.getContext('2d');
+      b.setTransform(1, 0, 0, 1, 0, 0);
+      b.fillStyle = '#05070f'; b.fillRect(0, 0, bg.width, bg.height);
+      const k = S0 / (2 * VIEW_R), w = VIEW_R / cam.z;
+      b.imageSmoothingQuality = 'high';
+      b.drawImage(boardImg, S0 / 2 + (cam.x - w) * k, S0 / 2 - (cam.y + w) * k, 2 * w * k, 2 * w * k, 0, 0, bg.width, bg.height);
+    }
+    const toPx = (x, y) => ({ x: size / 2 + (x - cam.x) * sc * cam.z, y: size / 2 - (y - cam.y) * sc * cam.z });
+    const toMM = (px, py) => ({ x: (px - size / 2) / (sc * cam.z) + cam.x, y: -(py - size / 2) / (sc * cam.z) + cam.y });
+
+    // spillerkamera: billedskift, nærbillede, kast-ryk
+    function pcamShow(i, shot) {
+      const img = pcam.querySelector('.pcam-img');
+      if (pcam.dataset.who !== String(i)) {
+        pcam.dataset.who = i;
+        const ph = G.Avatar.photoOf(P[i]);
+        img.innerHTML = ph ? `<img src="${esc(ph.url)}" alt="" referrerpolicy="no-referrer" style="object-position:${ph.pos || '50% 22%'}" onerror="this.outerHTML=window.Avatar.silhouette()">` : G.Avatar.silhouette();
+        img.style.transformOrigin = ph && ph.pos ? ph.pos : '50% 26%';
+        pcam.querySelector('.ps-name').innerHTML = `${flag(P[i].nat)} ${esc(P[i].name)}`;
+        const cr = G.Avatar.credit(P[i]);
+        pcam.title = cr;
+        pcam.classList.remove('cut'); void pcam.offsetWidth; pcam.classList.add('cut');
+      }
+      pcam.classList.remove('shot-wide', 'shot-face', 'shot-close');
+      pcam.classList.add('shot-' + (shot || 'wide'));
+    }
+    function pcamJolt(cls) {
+      pcam.classList.remove('jolt', 'celebrate'); void pcam.offsetWidth; pcam.classList.add(cls || 'jolt');
+    }
 
     // ---------- tilstand ----------
     let aim = { x: 0, y: 103 }; // T20
@@ -202,6 +260,8 @@
       const p = px || toPx(x, y);
       fctx.save();
       fctx.translate(p.x, p.y);
+      const zs = Math.min(1.9, Math.sqrt(cam.z)) * Math.max(0.75, size / 600);
+      fctx.scale(zs, zs);
       fctx.strokeStyle = 'rgba(0,0,0,.6)'; fctx.lineWidth = 3;
       fctx.beginPath(); fctx.moveTo(0, 0); fctx.lineTo(16, -20); fctx.stroke();
       fctx.strokeStyle = who === 0 ? '#38bdf8' : '#facc15'; fctx.lineWidth = 2;
@@ -213,6 +273,9 @@
     }
     function frame() {
       if (destroyed) return;
+      const ease = 0.085;
+      cam.x += (camT.x - cam.x) * ease; cam.y += (camT.y - cam.y) * ease; cam.z += (camT.z - cam.z) * ease;
+      drawBg();
       fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       fctx.clearRect(0, 0, size, size);
       boardDarts.forEach((d, i) => drawDart(d.x, d.y, d.who, i === boardDarts.length - 1));
@@ -226,8 +289,8 @@
       }
       if (aiTarget) {
         const p = toPx(aiTarget.x, aiTarget.y);
-        fctx.strokeStyle = 'rgba(250,204,21,.9)'; fctx.lineWidth = 2;
-        fctx.beginPath(); fctx.arc(p.x, p.y, 10, 0, Math.PI * 2); fctx.stroke();
+        fctx.strokeStyle = 'rgba(250,204,21,.45)'; fctx.lineWidth = 1.5;
+        fctx.beginPath(); fctx.arc(p.x, p.y, 7 * Math.sqrt(cam.z), 0, Math.PI * 2); fctx.stroke();
       }
       const steadyBar = root.querySelector('.steady-bar div');
       if (humanTurn()) {
@@ -272,13 +335,9 @@
         row.querySelector('.tv-legs').textContent = m.legs[i];
         if (sets) row.querySelector('.tv-sets').textContent = m.sets[i];
       });
-      const fig = root.querySelector('.oche-fig');
-      if (fig) fig.classList.toggle('mine', !!human[m.turn] && !m.over);
-      if (fig && fig.dataset.who !== String(m.turn)) {
-        fig.dataset.who = m.turn;
-        fig.innerHTML = G.Avatar.thrower(P[m.turn]) + `<div class="oche-name">${flag(P[m.turn].nat)} ${esc(P[m.turn].name)}</div>`;
-        fig.classList.remove('enter'); void fig.offsetWidth; fig.classList.add('enter');
-      }
+      const ci = pcam.dataset.who != null ? +pcam.dataset.who : m.turn;
+      const cs = m.stats[ci];
+      pcam.querySelector('.ps-sub').innerHTML = `${P[ci].nick ? '“' + esc(P[ci].nick) + '” · ' : ''}Snit ${E.avg(cs).toFixed(1)}${cs.t180 ? ' · 180: ' + cs.t180 : ''}${m.rem[ci] <= 170 && !m.needsDoubleIn(ci) ? ' · <b>' + m.rem[ci] + ' tilbage</b>' : ''}`;
       const st = root.querySelector('.ms-stats');
       const rows = [
         ['3-dart snit', (s) => E.avg(s).toFixed(2)],
@@ -321,18 +380,12 @@
     function addLog(who, html) { log.unshift({ who, html }); }
 
     // ---------- kast ----------
-    // hånden på figuren i lærredets koordinater
-    function handPos() {
-      const fig = root.querySelector('.oche-fig');
-      if (!fig) return { x: 0, y: size * 0.45 };
-      const fr = fig.getBoundingClientRect(), cr = fg.getBoundingClientRect();
-      return { x: Math.max(0, fr.right - cr.left), y: Math.min(size, Math.max(0, fr.top + fr.height * 0.3 - cr.top)) };
-    }
+    // pilen kommer ind fra nederste venstre hjørne (spillerens side)
+    function handPos() { return { x: size * 0.18, y: size * 1.04 }; }
     let flying = null;
     function registerThrow(x, y, viaAI) {
       const who = m.turn;
-      const fig = root.querySelector('.oche-fig');
-      if (fig) { fig.classList.remove('throw'); void fig.offsetWidth; fig.classList.add('throw'); }
+      pcamJolt('jolt');
       busy = true;
       later(() => {
         flying = { from: handPos(), to: { x, y }, t0: performance.now(), dur: 190 / (settings.speed || 1), who };
@@ -352,6 +405,15 @@
       if (ev.type === 'dart') { schedule(); return; }
       busy = true;
       const visitDarts = ev.darts || [];
+      // "replay": kameraet zoomer ind på pilene, spillerkameraet går i nærbillede
+      const pts = boardDarts.filter((d) => d.who === who);
+      if (pts.length) {
+        const cx = pts.reduce((a, d) => a + d.x, 0) / pts.length, cy = pts.reduce((a, d) => a + d.y, 0) / pts.length;
+        const spread = Math.max(18, ...pts.map((d) => Math.hypot(d.x - cx, d.y - cy)));
+        camTo(cx, cy, Math.max(1.3, Math.min(3, 95 / spread)));
+      }
+      pcamShow(who, ev.type === 'leg' || (ev.type === 'visit' && ev.score >= 140) ? 'close' : 'wide');
+      if (ev.type === 'leg' || (ev.type === 'visit' && ev.score === 180)) pcamJolt('celebrate');
       const labels = (visitDarts.length ? visitDarts : []).map((d) => d.hit.label).join(' ');
       if (ev.type === 'visit') {
         const s = ev.score;
@@ -374,7 +436,10 @@
         boardDarts = [];
         busy = false;
         aiTarget = null;
+        camFull();
         if (m.over) return finish();
+        pcamShow(m.turn, 'wide');
+        later(() => { if (!m.over) pcamShow(m.turn, 'face'); }, 450);
         updateBoard();
         schedule();
       }, pause);
@@ -387,11 +452,13 @@
         const th = m.aiThrow();
         const tp = E.targetPoint(th.target);
         aiTarget = tp;
+        camTo(tp.x, tp.y, th.target.n === 25 ? 2.6 : 2.3);
+        pcamShow(m.turn, 'face');
         later(() => {
           aiTarget = null;
           busy = false;
           registerThrow(th.x, th.y, true);
-        }, 520);
+        }, m.visit.darts.length ? 520 : 760);
       }
     }
 
@@ -422,7 +489,7 @@
       const legsBefore = m.legsTotal;
       let n = 0;
       while (!m.over && m.legsTotal === legsBefore && n < 5000) { const th = m.aiThrow(); m.throwDart(th.hit); n++; }
-      boardDarts = []; busy = false; aiTarget = null;
+      boardDarts = []; busy = false; aiTarget = null; camFull();
       addLog(m.legStarter, '<i>Leg simuleret</i>');
       updateBoard();
       if (m.over) finish(); else schedule();
@@ -511,6 +578,8 @@
 
     requestAnimationFrame(() => {
       resize();
+      pcamShow(m.turn, 'wide');
+      later(() => pcamShow(m.turn, 'face'), 700);
       updateBoard();
       const st = m.turn;
       addLog(st, `${esc(P[st].name)} starter. ${cfg.doubleIn ? 'Double-in!' : 'Game on!'}`);
