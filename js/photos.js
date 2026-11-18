@@ -72,6 +72,12 @@ window.PLAYER_PHOTOS = {
   "author": "DARTS NOW",
   "license": "CC BY 3.0"
  },
+ "Danny Jansen": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/0/0a/Danny_Jansen_in_2022.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "page": "https://commons.wikimedia.org/wiki/File:Danny_Jansen_in_2022.png",
+  "author": "Darts Actueel on YouTube",
+  "license": "CC BY 3.0"
+ },
  "Danny Noppert": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Danny_noppert_en_theo_de_jong-1510986499_%28cropped%29.jpg/500px-Danny_noppert_en_theo_de_jong-1510986499_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "page": "https://commons.wikimedia.org/wiki/File:Danny_noppert_en_theo_de_jong-1510986499_(cropped).jpg",
@@ -180,6 +186,18 @@ window.PLAYER_PHOTOS = {
   "author": "Sven Mandel",
   "license": "CC BY-SA 4.0"
  },
+ "Jonny Clayton": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/2026-03-26_Premier_League_Darts_%E2%80%93_Night_8_%E2%80%93_Berlin_2026_by_Sandro_Halank%E2%80%93018.jpg/500px-2026-03-26_Premier_League_Darts_%E2%80%93_Night_8_%E2%80%93_Berlin_2026_by_Sandro_Halank%E2%80%93018.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "page": "https://commons.wikimedia.org/wiki/File:2026-03-26_Premier_League_Darts_%E2%80%93_Night_8_%E2%80%93_Berlin_2026_by_Sandro_Halank%E2%80%93018.jpg",
+  "author": "Sandro Halank, Wikimedia Commons",
+  "license": "CC BY-SA 4.0"
+ },
+ "Jose de Sousa": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Jos%C3%A9_de_Sousa_in_2021.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "page": "https://commons.wikimedia.org/wiki/File:Jos%C3%A9_de_Sousa_in_2021.png",
+  "author": "Darts Actueel on YouTube",
+  "license": "CC BY 3.0"
+ },
  "Josh Rock": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4e/Josh_Rock_2024.png/500px-Josh_Rock_2024.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "page": "https://commons.wikimedia.org/wiki/File:Josh_Rock_2024.png",
@@ -281,6 +299,13 @@ window.PLAYER_PHOTOS = {
   "page": "https://commons.wikimedia.org/wiki/File:Mervyn_King_Darts_Actueel_2022_(cropped).jpg",
   "author": "Darts Actueel on YouTube",
   "license": "CC BY 3.0"
+ },
+ "Michael van Gerwen": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/2022-06-13_Play-offs_%282022_Premier_League_Darts%29_by_Sandro_Halank%E2%80%93087.jpg/500px-2022-06-13_Play-offs_%282022_Premier_League_Darts%29_by_Sandro_Halank%E2%80%93087.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "page": "https://commons.wikimedia.org/wiki/File:2022-06-13_Play-offs_(2022_Premier_League_Darts)_by_Sandro_Halank%E2%80%93087.jpg",
+  "author": "Sandro Halank, Wikimedia Commons",
+  "license": "CC BY-SA 4.0",
+  "pos": "50% 12%"
  },
  "Mickey Mansell": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Mickey_Mansell.png/500px-Mickey_Mansell.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -387,6 +412,12 @@ window.PLAYER_PHOTOS = {
  "Ryan Searle": {
   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/Ryan_Searle_2024.png/500px-Ryan_Searle_2024.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "page": "https://commons.wikimedia.org/wiki/File:Ryan_Searle_2024.png",
+  "author": "DARTS NOW",
+  "license": "CC BY 3.0"
+ },
+ "Scott Williams": {
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/Scott_Williams_2024.png/500px-Scott_Williams_2024.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "page": "https://commons.wikimedia.org/wiki/File:Scott_Williams_2024.png",
   "author": "DARTS NOW",
   "license": "CC BY 3.0"
  },
